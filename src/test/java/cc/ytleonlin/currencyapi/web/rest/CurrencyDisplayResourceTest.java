@@ -37,11 +37,41 @@ class CurrencyDisplayResourceTest {
     @Transactional
     void create() throws Exception {
         CurrencyDisplay display = createDisplay();
+
         mockMvc.perform(MockMvcRequestBuilders.post(CurrencyDisplayResource.PATH).contentType(MediaType.APPLICATION_JSON).content(convertObjectToBytes(display)))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isCreated());
     }
 
+    @Test
+    @Transactional
+    void createWithExistingId() throws Exception {
+        CurrencyDisplay display = createDisplay();
+        display.setId(1L);
+
+        mockMvc.perform(MockMvcRequestBuilders.post(CurrencyDisplayResource.PATH).contentType(MediaType.APPLICATION_JSON).content(convertObjectToBytes(display)))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void getById() throws Exception {
+        Long id = 1L;
+
+        mockMvc.perform(MockMvcRequestBuilders.get(PATH_WITH_ID, id))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(id));
+    }
+
+    @Test
+    void getByIdNotFound() throws Exception {
+        Long id = 9999L;
+
+        mockMvc.perform(MockMvcRequestBuilders.get(PATH_WITH_ID, id))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
 
     @Test
     void getByCode() throws Exception {
@@ -54,13 +84,12 @@ class CurrencyDisplayResourceTest {
     }
 
     @Test
-    void getById() throws Exception {
-        Long id = 1L;
+    void getByCodeNotFound() throws Exception {
+        String code = "ABC";
 
-        mockMvc.perform(MockMvcRequestBuilders.get(PATH_WITH_ID, id))
+        mockMvc.perform(MockMvcRequestBuilders.get(PATH_WITH_CODE, code))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(id));
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test

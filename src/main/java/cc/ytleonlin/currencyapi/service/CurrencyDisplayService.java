@@ -31,19 +31,22 @@ public class CurrencyDisplayService {
     @Transactional
     public CurrencyDisplay save(CurrencyDisplay display) {
         CurrencyDisplay saved = currencyDisplayRepository.save(display);
-        log.info("new CurrencyDisplay saved, id: {}", saved.getId());
+        log.info("New CurrencyDisplay was saved, id: {}", saved.getId());
         return saved;
     }
 
     @Transactional
     public Optional<CurrencyDisplay> partialUpdateById(Long id, CurrencyDisplay displayToUpdate) {
-        return findById(id).map(old -> {
+        Optional<CurrencyDisplay> result = findById(id).map(old -> {
             if (isNotEmpty(displayToUpdate.getCode())) old.setCode(displayToUpdate.getCode());
             if (isNotEmpty(displayToUpdate.getDisplay())) old.setDisplay(displayToUpdate.getDisplay());
             if (isNotEmpty(displayToUpdate.getLanguage())) old.setLanguage(displayToUpdate.getLanguage());
 
             return old;
         }).map(currencyDisplayRepository::save);
+
+        result.ifPresent(c -> log.info("The CurrencyDisplay was updated: {}", c));
+        return result;
     }
 
     private boolean isNotEmpty(String target) {
@@ -53,6 +56,7 @@ public class CurrencyDisplayService {
     @Transactional
     public void deleteById(Long id) {
         currencyDisplayRepository.deleteById(id);
+        log.info("The CurrencyDisplay was delete by id: {}", id);
     }
 
     @Transactional(readOnly = true)

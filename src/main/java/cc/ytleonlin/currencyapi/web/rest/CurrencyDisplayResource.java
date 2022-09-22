@@ -3,8 +3,11 @@ package cc.ytleonlin.currencyapi.web.rest;
 import cc.ytleonlin.currencyapi.configuration.ApplicationConfig;
 import cc.ytleonlin.currencyapi.domain.CurrencyDisplay;
 import cc.ytleonlin.currencyapi.service.CurrencyDisplayService;
+import cc.ytleonlin.currencyapi.web.rest.error.BadRequestException;
+import cc.ytleonlin.currencyapi.web.rest.error.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -30,9 +33,10 @@ public class CurrencyDisplayResource {
     }
 
     @PostMapping
-    public ResponseEntity<CurrencyDisplay> create(@RequestBody CurrencyDisplay display) throws URISyntaxException {
+    public ResponseEntity<CurrencyDisplay> create(@Validated @RequestBody CurrencyDisplay display) throws URISyntaxException {
+        log.debug("Request to create CurrencyDisplay: {}", display);
         if (display.getId() != null)
-            throw new IllegalArgumentException("The create CurrencyDisplay operation can't have ID.");
+            throw new BadRequestException("The create CurrencyDisplay operation can't have ID.");
 
         CurrencyDisplay saved = currencyDisplayService.save(display);
         return ResponseEntity.created(new URI(PATH + "/id/" + saved.getId())).body(saved);
@@ -40,25 +44,31 @@ public class CurrencyDisplayResource {
 
     @GetMapping(PATH_WITH_ID)
     public Optional<CurrencyDisplay> getById(@PathVariable Long id) {
-        return currencyDisplayService.findById(id);
+        Optional<CurrencyDisplay> result = currencyDisplayService.findById(id);
+        if (!result.isPresent())
+            throw new NotFoundException(String.format("Not found with id: %s", id));
+        return result;
     }
 
     @GetMapping(PATH_WITH_CODE)
     public Optional<CurrencyDisplay> getByCode(@PathVariable String code) {
-        return currencyDisplayService.findByCodeAndLanguage(code, applicationConfig.getDefaultLanguage());
+        Optional<CurrencyDisplay> result = currencyDisplayService.findByCodeAndLanguage(code, applicationConfig.getDefaultLanguage());
+        if (!result.isPresent())
+            throw new NotFoundException(String.format("Not found with code: %s and language: %s", code, applicationConfig.getDefaultLanguage()));
+        return result;
     }
 
     @PatchMapping(PATH_WITH_ID)
     public Optional<CurrencyDisplay> partialUpdateById(@PathVariable Long id, @RequestBody CurrencyDisplay display) throws URISyntaxException {
-        log.info("Request to partial update CurrencyDisplay: {}", id);
+        log.debug("Request to partial update CurrencyDisplay: {}", id);
         if (display.getId() != null && !id.equals(display.getId()))
-            throw new IllegalArgumentException("The id in body should be empty or same as the id on the path.");
+            throw new BadRequestException("The id in body should be empty or same as the id on the path.");
         return currencyDisplayService.partialUpdateById(id, display);
     }
 
     @DeleteMapping(PATH_WITH_ID)
     public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-        log.info("Request to delete CurrencyDisplay: {}", id);
+        log.debug("Request to delete CurrencyDisplay: {}", id);
         currencyDisplayService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
